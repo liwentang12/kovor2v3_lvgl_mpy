@@ -16,6 +16,9 @@ typedef struct lvgl_esp32_Wrapper_obj_t
     uint16_t *buf2;
 
     lv_display_t *lv_display;
+
+    lv_indev_t * indev_tp;//lwt added
+
 } lvgl_esp32_Wrapper_obj_t;
 
 extern const mp_obj_type_t lvgl_esp32_Wrapper_type;

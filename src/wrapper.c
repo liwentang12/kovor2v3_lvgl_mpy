@@ -4,7 +4,61 @@
 #include "esp_timer.h"
 #include "py/runtime.h"
 
+#include "tt21100.h"
+
+
 static const char *TAG = "lvgl_esp32_wrapper";
+
+
+static esp_err_t touch_ic_read1(uint8_t *tp_num, uint16_t *x, uint16_t *y, uint8_t *btn_val)
+{
+    esp_err_t ret_val = ESP_OK;
+    uint16_t btn_signal = 0;
+
+    ret_val |= tt21100_tp_read();
+    ret_val |= tt21100_get_touch_point(tp_num, x, y);
+    ret_val |= tt21100_get_btn_val(btn_val, &btn_signal);
+
+#if TOUCH_PANEL_SWAP_XY
+    uint16_t swap = *x;
+    *x = *y;
+    *y = swap;
+#endif
+
+#if TOUCH_PANEL_INVERSE_X
+    *x = LCD_H_RES - ( *x + 1);
+#endif
+
+#if TOUCH_PANEL_INVERSE_Y
+    *y = LCD_V_RES - (*y + 1);
+#endif
+
+    ESP_LOGV(TAG, "[%3u, %3u]", *x, *y);
+    return ret_val;
+}
+
+static IRAM_ATTR void touchpad_read1(lv_indev_t *indev_drv, lv_indev_data_t *data)
+{
+    uint8_t tp_num = 0, btn_val = 0;
+    uint16_t x = 0, y = 0;
+    /* Read touch point(s) via touch IC */
+    if (ESP_OK != touch_ic_read1(&tp_num, &x, &y, &btn_val)) {
+        return;
+    }
+
+    ESP_LOGE(TAG, "Touch (%u) : [%3u, %3u]", tp_num, x, y);
+
+    /* FT series touch IC might return 0xff before first touch. */
+    if ((0 == tp_num) || (5 < tp_num)) {
+        data->state = LV_INDEV_STATE_REL;
+    } else {
+        data->point.x = x;
+        data->point.y = y;
+        data->state = LV_INDEV_STATE_PR;
+    }
+}
+
+
 
 static void flush_cb(lv_display_t *display, const lv_area_t *area, uint8_t *data)
 {
@@ -59,6 +113,13 @@ static mp_obj_t lvgl_esp32_Wrapper_init(mp_obj_t self_ptr)
     lv_display_set_flush_cb(self->lv_display, flush_cb);
     lv_display_set_user_data(self->lv_display, self);
     lv_tick_set_cb(tick_get_cb);
+
+    //lwt added
+    self->indev_tp = lv_indev_create();
+    lv_indev_set_type(self->indev_tp, LV_INDEV_TYPE_POINTER);
+    lv_indev_set_read_cb(self->indev_tp, touchpad_read1);
+    lv_indev_set_display(self->indev_tp, self->lv_display);
+    //lwt added end
 
     return mp_obj_new_int_from_uint(0);
 }

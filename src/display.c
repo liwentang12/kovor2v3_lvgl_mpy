@@ -14,6 +14,7 @@
 #include "driver/spi_master.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#include "tt21100.h"
 
 static const char *TAG = "lvgl_esp32_display";
 
@@ -72,6 +73,8 @@ static void clear(lvgl_esp32_Display_obj_t *self)
 static mp_obj_t lvgl_esp32_Display_init(mp_obj_t self_ptr)
 {
     lvgl_esp32_Display_obj_t *self = MP_OBJ_TO_PTR(self_ptr);
+
+     tt21100_tp_init();//lwt added 4 tp
 
     ESP_LOGI(TAG, "Setting up panel IO");
     esp_lcd_panel_io_spi_config_t io_config = {

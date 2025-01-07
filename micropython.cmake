@@ -14,6 +14,7 @@ target_include_directories(usermod_lvgl_esp32 INTERFACE
         ${IDF_PATH}/components/esp_lcd/include/
         ${CMAKE_CURRENT_LIST_DIR}/binding/lvgl
         ${CMAKE_CURRENT_LIST_DIR}/binding/lvgl/src
+        $ENV{ADF_PATH}/examples/display/music_player/components/lcd_touch/include
 )
 
 target_link_libraries(usermod_lvgl_esp32 INTERFACE lvgl_interface)
